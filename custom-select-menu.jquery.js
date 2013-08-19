@@ -146,8 +146,10 @@
 				newList.append( newOption );
 			});
 
-			newList.find( 'li' ).bind( 'click, mousedown.jsp', function( event ){
-				return false;
+			newList.find( 'li' ).bind( 'mousedown.jsp', function( event ){
+				var target = $(event.target);
+
+				updateMenu( target );
 			});
 
 			// Listen for click events on the custom select menu container
