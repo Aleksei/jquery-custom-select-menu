@@ -6,6 +6,7 @@
 		// Create some defaults, extending them with any options that were provided
 		var settings = $.extend( {
 			menuClass : 'custom-select-menu', /* The class name for the custom select menu div */
+			wrapperName: 'custom-select-wrapper js-custom-select-wrapper',
 			openedClass : 'opened', /* The class given to the label when the menu is visible */
 			selectedClass : 'selected', /* The class given to the list item when an option has been selected */
 			selectionMadeClass : 'selection-made' /* The class given to the label when an option has been selected */
@@ -19,6 +20,10 @@
 				customOptionText = selection.text(), /* Get the option text (for the label) */
 				hiddenInput = $('input[name="' + customMenuName + '"]'); /* Get the hidden input */
 
+			var $wrapper = selection.parents( '.custom-select-wrapper' ),
+				$container = $wrapper.parents( '.custom-select-menu' ),
+				$label = $container.find( 'label' );
+
 			// Remove 'selected' class from currently selected option
 			selection.parent().find( '.' + settings.selectedClass ).removeClass( settings.selectedClass );
 
@@ -29,23 +34,23 @@
 			hiddenInput.val( customOptionValue ).change();
 
 			// Update the label
-			selection.parent().parent().find( 'label' ).text( customOptionText );
+			$label.text( customOptionText );
 
 			// If the hidden input value isn't empty give the label a class to show it was selected
-			if(hiddenInput.val() !== '') {
-				selection.parent().parent().find( 'label' ).addClass( settings.selectionMadeClass );
+			if ( hiddenInput.val() !== '' ) {
+				$label.addClass( settings.selectionMadeClass );
 			} else {
-				selection.parent().parent().find( 'label' ).removeClass( settings.selectionMadeClass );
+				$label.removeClass( settings.selectionMadeClass );
 			}
 
 			// Close the menu
-			selection.parent().hide();
+			$wrapper.hide();
 
 			// Toggle the opened class on the label
-			if( selection.parent().css('display') !== 'none' ) {
-				selection.parent().parent().find( 'label' ).toggleClass( settings.openedClass );
+			if( $wrapper.css('display') !== 'none' ) {
+				$label.toggleClass( settings.openedClass );
 			} else {
-				selection.parent().parent().find( 'label' ).removeClass( settings.openedClass );
+				$label.removeClass( settings.openedClass );
 			}
 
 		}
@@ -59,6 +64,7 @@
 				newContainer,
 				newLabel,
 				labelText,
+				$listWrapper,
 				newList,
 				newOption,
 				selectedOption,
@@ -111,14 +117,18 @@
 				newLabel = $( '<label>' + labelText + '</label>' );
 			}
 
+
+			$listWrapper = $( '<div/>', {
+				'class': settings.wrapperName
+			}).hide();
 			// Append an unordered list to contain the custom menu options and hide it
-			newList = $( '<ul data-select-name="' + selectName + '">' ).hide();
+			newList = $( '<ul data-select-name="' + selectName + '">' );
 
-
+			$listWrapper.append( newList );
 
 			// Add the custom select menu container to the DOM after the original select menu
 			// and append the label, list and hidden input to it
-			$this.after( newContainer.append( newLabel, newList, newHiddenInput ) );
+			$this.after( newContainer.append( newLabel, $listWrapper, newHiddenInput ) );
 
 			// Loop through all the options and create li's to append to the custom menu
 			$this.find( 'option' ).each(function(){
@@ -136,6 +146,10 @@
 				newList.append( newOption );
 			});
 
+			newList.find( 'li' ).bind( 'click, mousedown.jsp', function( event ){
+				return false;
+			});
+
 			// Listen for click events on the custom select menu container
 			newContainer.on( 'click', function( event ){
 				var target = $(event.target);
@@ -143,7 +157,7 @@
 				// When the label is clicked, toggle the menu
 				if( target.is( 'label' ) ){
 					newLabel.toggleClass( settings.openedClass );
-					newLabel.parent().find( 'ul' ).toggle();
+					$listWrapper.toggle();
 				}
 
 				// When an option is clicked, update the menu with that option
@@ -157,7 +171,7 @@
 				// Arrows keys open the menu
 				if( e.keyCode === 38 || e.keyCode === 40 ) {
 					$(this).find( newLabel ).addClass( settings.openedClass );
-					$(this).find( newList ).show();
+					$listWrapper.show();
 				}
 
 				var li = $(this).find( 'li' ),
@@ -193,9 +207,9 @@
 
 			// If the container div loses focus and the menu is visible, close it
 			newContainer.on( 'blur', function() {
-				if( $(this).find( newList ).is( ':visible' ) ) {
+				if( $listWrapper.is( ':visible' ) ) {
 					$(this).find( newLabel ).removeClass( settings.openedClass );
-					$(this).find( newList ).hide();
+					$listWrapper.hide();
 				}
 			});
 
@@ -203,7 +217,7 @@
 			$('html').on( 'keyup', function( e ) {
 				if( e.keyCode === 27 ) {
 					newLabel.removeClass( settings.openedClass );
-					newList.hide();
+					$listWrapper.hide();
 				}
 			});
 
@@ -217,9 +231,15 @@
 				if ( !target.parents().addBack().is( '.' + settings.menuClass + ' ul, .' + settings.menuClass + ' label' ) ) {
 					// Clicked outside
 					$('.' + settings.menuClass + ' label').removeClass( settings.openedClass );
-					$('.' + settings.menuClass + ' ul').hide();
+					$listWrapper.hide();
 				}
 			});
+
+			setTimeout(function(){
+				if ( typeof settings.inited === 'function' ) {
+					settings.inited( newContainer );
+				}
+			}, 0 );
 
 		});
 
